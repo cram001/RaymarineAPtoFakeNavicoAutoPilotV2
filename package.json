@@ -1,0 +1,35 @@
+{
+  "name": "signalk-raymarine-navico-autopilot-bridge",
+  "version": "0.1.0",
+  "description": "Signal K plugin that presents a Raymarine SeaTalk autopilot as a Navico/Simrad autopilot to B&G/Simrad MFDs",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check index.js && node --check lib/navico.js && node --check lib/raymarine.js"
+  },
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk-category-hardware",
+    "nmea2000",
+    "navico",
+    "simrad",
+    "raymarine",
+    "autopilot"
+  ],
+  "author": "Marc Archambault and contributors",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@canboat/canboatjs": "^3.20.0",
+    "@canboat/ts-pgns": "^1.11.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cram001/RaymarineAPtoFakeNavicoAutoPilotV2.git"
+  },
+  "signalk": {
+    "displayName": "Raymarine to Navico Autopilot Bridge"
+  }
+}
