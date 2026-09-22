@@ -2,13 +2,16 @@
 
 This project presents a legacy Raymarine SeaTalk/SeaTalkNG autopilot to a B&G/Simrad/Navico MFD as a virtual Simrad AC12-class autopilot.
 
+> [!WARNING]
+> **Victron Cerbo GX / GX devices are not supported.** This plugin is intentionally targeted at a Raspberry Pi or other general-purpose Linux host. The Navico device emulation, proprietary PGN processing, and additional bidirectional W2K-1 connection create processor load that is not appropriate for a Cerbo GX deployment. A successful package/CI check on ARM does **not** imply Cerbo GX runtime support.
+
 The target installation is:
 
 - Raymarine S1/S2/S2G-class course computer on SeaTalk1
 - Raymarine p70/p70s control head
 - Raymarine SeaTalk1-to-SeaTalkNG converter with current firmware
 - B&G/Simrad Zeus-family MFD on the same NMEA 2000 backbone
-- Signal K Server on Linux/Raspberry Pi
+- Signal K Server on a Raspberry Pi 4/5 or other suitable Linux computer
 - Actisense W2K-1 providing NMEA 2000 over Wi-Fi/Ethernet TCP
 
 The plugin does **not** replace the Raymarine course computer. The Raymarine pilot remains responsible for steering the vessel. The plugin translates between the Navico control protocol expected by the Zeus and the Raymarine SeaTalk protocol transported over NMEA 2000 by the Raymarine converter.
@@ -130,9 +133,55 @@ Press `Ctrl-C` to exit. Do not type arbitrary data into this session; the server
 
 # Installing the Signal K plugin from this development branch
 
-The plugin is not yet published in the Signal K App Store. During development, install it by linking a local checkout.
+The plugin is not yet published in the Signal K App Store. For boat testing, the simplest method is to install the GitHub development branch directly into the Signal K configuration directory.
 
-## 1. Clone the repository
+Signal K's plugin-development documentation also supports `npm link`; that workflow is retained below for active development. For a Raspberry Pi that simply needs to test the current GitHub branch, the direct GitHub install is easier.
+
+## Method A — Recommended for testing: install directly from GitHub
+
+Run these commands **as the same Linux user that runs Signal K**:
+
+```bash
+cd ~/.signalk
+npm install "github:cram001/RaymarineAPtoFakeNavicoAutoPilotV2#modern-signalk-plugin"
+```
+
+Then restart Signal K.
+
+After restart, open the Signal K Admin UI and go to:
+
+**Server → Plugin Config → Raymarine to Navico Autopilot Bridge**
+
+The plugin should now appear in the list.
+
+### Updating to a newer development build
+
+When new commits are pushed to `modern-signalk-plugin`, reinstall the GitHub dependency:
+
+```bash
+cd ~/.signalk
+npm uninstall signalk-raymarine-navico-autopilot-bridge
+npm install "github:cram001/RaymarineAPtoFakeNavicoAutoPilotV2#modern-signalk-plugin"
+```
+
+Then restart Signal K again.
+
+### Removing the test plugin
+
+```bash
+cd ~/.signalk
+npm uninstall signalk-raymarine-navico-autopilot-bridge
+```
+
+Restart Signal K after removal.
+
+> If your Signal K configuration directory is not `~/.signalk`, substitute the actual configuration directory used by your Signal K service. Avoid using `sudo` unless your specific Signal K installation is actually owned/run by root; installing under the wrong user is a common reason a plugin does not appear.
+
+## Method B — Developer workflow: clone and npm-link
+
+This is useful when editing the plugin directly on the Raspberry Pi.
+
+### 1. Clone the repository
 
 ```bash
 cd ~
@@ -141,43 +190,36 @@ cd RaymarineAPtoFakeNavicoAutoPilotV2
 git checkout modern-signalk-plugin
 ```
 
-## 2. Install dependencies
+### 2. Install dependencies and run tests
 
 ```bash
 npm install
-```
-
-The modern plugin uses the published current canboat packages. It does not use the old `canboatjs/` directory retained in the repository for legacy/reference purposes.
-
-## 3. Run the unit tests
-
-```bash
 npm test
 npm run check
 ```
 
-Both should complete without errors before linking the plugin into Signal K.
+The modern plugin uses current published canboat packages. It does not use the old `canboatjs/` directory retained in the repository for legacy/reference purposes.
 
-## 4. Link the plugin
+### 3. Link the plugin
 
 From the repository directory:
 
 ```bash
-sudo npm link
+npm link
 ```
 
-Then link it into the Signal K configuration directory:
+Then:
 
 ```bash
 cd ~/.signalk
-sudo npm link signalk-raymarine-navico-autopilot-bridge
+npm link signalk-raymarine-navico-autopilot-bridge
 ```
 
-If your Signal K installation runs under a dedicated service account or uses a non-default configuration directory, perform the link under the same environment/user used by the Signal K service.
+Restart Signal K.
 
-Restart Signal K after linking.
+Signal K's current developer documentation recommends this `npm link` approach for plugin debugging.
 
-## 5. Configure in the Signal K Admin UI
+## Configure in the Signal K Admin UI
 
 Open:
 
@@ -372,3 +414,33 @@ Automatic converter discovery is planned; until then the address is configurable
 # Legacy code
 
 The old files (`emulate.js`, `device/`, and the bundled `canboatjs/` tree) are retained on this development branch as protocol reference during the port. They are not used by `index.js` and will be removed or moved under a legacy/reference directory once the modern implementation reaches functional parity.
+
+
+---
+
+# Credits and referenced projects
+
+This modern Signal K plugin builds on protocol investigation and implementation work from several open-source projects. Credit is due to their authors and contributors.
+
+- **htool/RaymarineAPtoFakeNavicoAutoPilot** — the original project from which this repository was forked. Its reverse engineering of Navico/SimNet autopilot traffic, AC12 emulation, commissioning exchanges, and Raymarine SeaTalk-over-NMEA2000 behavior is the foundation of this project.  
+  https://github.com/htool/RaymarineAPtoFakeNavicoAutoPilot
+
+- **cram001/RaymarineAPtoFakeNavicoAutoPilotV2** — the subsequent fork and accumulated testing/changes that are being modernized here.  
+  https://github.com/cram001/RaymarineAPtoFakeNavicoAutoPilotV2
+
+- **SignalK/signalk-autopilot** — referenced for the current Signal K autopilot architecture and, in particular, modern Raymarine NMEA 2000 / SeaTalk1-to-SeaTalkNG command handling for Standby, Auto, Wind, Track, heading adjustments, tack, and waypoint advance.  
+  https://github.com/SignalK/signalk-autopilot
+
+- **canboat/canboatjs** — provides the current JavaScript NMEA 2000 transport, encoding/decoding, NMEA 2000 device/address-claim handling, and IP gateway support used by this plugin.  
+  https://github.com/canboat/canboatjs
+
+- **canboat/ts-pgns** — provides current typed NMEA 2000 PGN definitions and enumerations, including many Simrad/Navico and Raymarine PGNs used during this modernization.  
+  https://github.com/canboat/ts-pgns
+
+- **SignalK/signalk-server** — referenced for the current Signal K plugin API, plugin lifecycle/configuration conventions, reusable plugin CI workflow, and plugin-development/install guidance.  
+  https://github.com/SignalK/signalk-server
+
+- **Actisense W2K-1 documentation** — referenced for the W2K-1 data-server capabilities and N2K ASCII/TCP configuration used to give the virtual AC12 an independent bidirectional NMEA 2000 connection.  
+  https://actisense.com/acti_downloads/w2k-1-user-manual/
+
+Where protocol constants or captured proprietary payloads originate from earlier open-source reverse engineering, they should remain attributed in source comments as the port progresses. This project does not claim original authorship of that prior protocol work.
