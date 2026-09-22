@@ -16,8 +16,7 @@
     "raymarine",
     "autopilot"
   ],
-  "author": "Marc Archambault and contributors",
-  "license": "Apache-2.0",
+  "author": "cram001 and contributors",
   "engines": {
     "node": ">=20"
   },
